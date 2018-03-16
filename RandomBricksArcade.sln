@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27130.2027
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RandomBricksArcade", "BrickbreakerArcade\RandomBricksArcade.csproj", "{B63C4793-3D9F-41F7-B137-DE3BC6A1A3E7}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B63C4793-3D9F-41F7-B137-DE3BC6A1A3E7}.Debug|x86.ActiveCfg = Debug|x86
+		{B63C4793-3D9F-41F7-B137-DE3BC6A1A3E7}.Debug|x86.Build.0 = Debug|x86
+		{B63C4793-3D9F-41F7-B137-DE3BC6A1A3E7}.Release|x86.ActiveCfg = Release|x86
+		{B63C4793-3D9F-41F7-B137-DE3BC6A1A3E7}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {BBA3AF37-7D3B-4F6E-B2D9-3AF20E371236}
+	EndGlobalSection
+EndGlobal
