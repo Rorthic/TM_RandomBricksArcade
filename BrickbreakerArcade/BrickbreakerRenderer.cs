@@ -66,36 +66,22 @@ namespace RandomBricksArcade
             DrawBricks();
             spriteBatch.Draw(CoreGlobals.BlankTexture, new Rectangle(0, game.GameScreenY, game.ScreenSize.X, 1), Color.White); //line below score/lives
             //spriteBatch.Draw(CoreGlobals.BlankTexture, new Rectangle(0, game.ScreenSize.Y - 1, game.ScreenSize.X, 1), Color.Red); //bottom of screen line
-            spriteBatch.Draw(CoreGlobals.BlankTexture, game.BallRect, Color.SaddleBrown);
+            spriteBatch.Draw(CoreGlobals.BlankTexture, game.BallRect, Color.White);
             spriteBatch.Draw(CoreGlobals.BlankTexture, game.PlayerPaddleRect, Color.White);
+            if (game.messageToPlayer != string.Empty)
+            {
+                spriteBatch.DrawStringCentered(font, game.messageToPlayer, 20, Color.Green, 0.4f);
+            }
+
         }
 
         private void DrawBricks()
         {
-            Color color;
             for (int i = 0; i < game.Bricks.Count; i++)
             {
-
-                switch (game.Bricks[i].health)
-                {
-                    case 1:
-                        color = Color.Green;
-                        break;
-                    case 2:
-                        color = Color.Blue;
-                        break;
-                    case 3:
-                        color = Color.Purple;
-                        break;
-                    case 10:
-                        color = Color.Gray;
-                        break;
-                    default:
-                        color = Color.White;
-                        break;
-                }
-                spriteBatch.Draw(CoreGlobals.BlankTexture, game.Bricks[i].rectangle, color);
+                spriteBatch.Draw(CoreGlobals.BlankTexture, game.Bricks[i].rectangle, game.Bricks[i].color);
             }
+
         }
 
         void DrawHud()
@@ -107,15 +93,79 @@ namespace RandomBricksArcade
 
         void DrawGameOver()
         {
-            spriteBatch.DrawStringCentered(font, "HighScore: " + game.highScore.LoadHighScore().ToString(), 20, Color.White, 0.4f);
-            spriteBatch.DrawStringCentered(font, "Random", 35, Color.White, 1.2f);
-            spriteBatch.DrawStringCentered(font, "Bricks", 65, Color.White, 1.2f);
-            spriteBatch.DrawStringCentered(font, "Game Over", 120, Color.Red, 0.8f);
-            spriteBatch.DrawStringCentered(font, game.CreditText, 160, Color.White, 0.6f);
-            spriteBatch.DrawStringCentered(font, "Move with left and right arrows", 200, Color.Green, .4f);
-            spriteBatch.DrawStringCentered(font, "Up arrow releases ball.", 215, Color.Green, .4f);
+            switch (game.currentMenu)
+            {
+                case BrickbreakerGame.GameMenu.RandomLayout:
+                    DrawMainMenuForRandomLayout();
+                        break;
+                case BrickbreakerGame.GameMenu.ItemLayout:
+                    DrawMainMenuForItemLayout();
+                    break;
+                case BrickbreakerGame.GameMenu.Dedication:
+                    DrawMainMenuControlsAndDedication();
+                    break;
+                case BrickbreakerGame.GameMenu.Controls:
+                    DrawMainMenuControlsAndDedication();
+                    break;
+
+            }
 
         }
+
+
+        void DrawMainMenuForRandomLayout()
+        {
+            spriteBatch.DrawStringCentered(font, "HighScore: " + game.highScore.HighScoreRandom().ToString(), 20, Color.White, 0.4f);
+            spriteBatch.DrawStringCentered(font, "Random", 35, Color.White, 1.2f);
+            spriteBatch.DrawStringCentered(font, "Bricks", 70, Color.White, 1.2f);
+            spriteBatch.DrawStringCentered(font, "Game Over", 120, Color.Red, 0.8f);
+            spriteBatch.DrawStringCentered(font, game.CreditText, 160, Color.White, 0.6f);
+
+            spriteBatch.DrawStringCentered(font, "---->", 215, Color.White, 0.4f);
+
+        }
+
+        void DrawMainMenuForItemLayout()
+        {
+            spriteBatch.DrawStringCentered(font, "HighScore: " + game.highScore.HighScoreItem().ToString(), 20, Color.White, 0.4f);
+            spriteBatch.DrawStringCentered(font, "Random", 35, Color.White, 1.2f);
+            spriteBatch.DrawStringCentered(font, "Items", 70, Color.White, 1.2f);
+            spriteBatch.DrawStringCentered(font, "Game Over", 120, Color.Red, 0.8f);
+            spriteBatch.DrawStringCentered(font, game.CreditText, 160, Color.White, 0.6f);
+
+            spriteBatch.DrawStringCentered(font, "---->", 215, Color.White, 0.4f);
+        }
+
+        void DrawMainMenuControlsAndDedication()
+        {
+            //dedication part of the screen
+
+            spriteBatch.DrawStringCentered(font, "Special Thanks:", 35, Color.White, 0.5f);
+            spriteBatch.DrawStringCentered(font, "Craig", 60, Color.Gold, 0.4f);
+            spriteBatch.DrawStringCentered(font, "for the idea of using items for the levels.", 75, Color.White, 0.4f);
+
+            //how to controll the game
+
+            if (InputManager.IsUsingGamePad)
+            {
+                spriteBatch.DrawStringCentered(font, "Move with Left or Right Thumb stick", 125, Color.Green, .4f);
+                spriteBatch.DrawStringCentered(font, "A button releases ball.", 140, Color.Green, .4f);
+                spriteBatch.DrawStringCentered(font, "B button to exit", 165, Color.Green, .4f);
+            }
+            else
+            {
+                spriteBatch.DrawStringCentered(font, "Move with mouse", 125, Color.Green, .4f);
+                spriteBatch.DrawStringCentered(font, "Left click to release ball.", 140, Color.Green, .4f);
+
+                spriteBatch.DrawStringCentered(font, "Move with A and D", 165, Color.Green, .4f);
+                spriteBatch.DrawStringCentered(font, "W releases ball.", 180, Color.Green, .4f);
+
+                spriteBatch.DrawStringCentered(font, "ESC to exit", 200, Color.Green, .4f);
+            }
+
+            spriteBatch.DrawStringCentered(font, "---->", 215, Color.White, 0.4f);
+        }
+
 
 
         #endregion
