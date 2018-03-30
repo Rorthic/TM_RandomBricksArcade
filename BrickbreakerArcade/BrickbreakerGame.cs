@@ -25,9 +25,7 @@ namespace RandomBricksArcade
 
         public enum GameMenu
         {
-            RandomLayout,
-            ItemLayout,
-            Dedication,
+            Main,
             Controls
         }
 
@@ -42,10 +40,13 @@ namespace RandomBricksArcade
         public string LivesText;
         public int GameScreenY; //height of play area
         public List<Brick> Bricks = new List<Brick>();
+        
         public HighScore highScore;
         public bool useRandomLayout = true;
         public string messageToPlayer = string.Empty;
         public GameMenu currentMenu;
+        public int highScoreRandom = 0;
+        public int highScoreItem = 0;
 
         //AudioManager audioManager;
         float gameOverTransitionTimer;
@@ -72,23 +73,27 @@ namespace RandomBricksArcade
         List<Item> MidLevelItemList;
         List<Item> HighLevelItemList;
 
+       float ballSpeedTimer;
+       //IAudioManager audioManager;
+
 
         //for testing only
+#if DEBUG
         bool autoPlay = false; //TODO set to false for release
+#endif
+        bool slowBall = false;
 
+#endregion
 
-
-        #endregion
-
-        #region Properties
+#region Properties
 
         public override bool CanDeactivate { get { return State == GameState.GameOver; } }
         public Rectangle PlayerPaddleRect { get { return new Rectangle((int)(playerPaddlePos - paddleSize2.X), ScreenSize.Y - paddleIndent - paddleSize.Y, paddleSize.X, paddleSize.Y); } }
         public Rectangle BallRect { get { return new Rectangle((int)(ballPos.X - ballSize2), (int)(ballPos.Y - ballSize2), ballSize, ballSize); } }
 
-        #endregion
+#endregion
 
-        #region Initialization
+#region Initialization
 
         public BrickbreakerGame(ITMGame game, ITMMap map, ITMPlayer player, GlobalPoint3D point, BlockFace face)
             : base(game, map, player, point, face)
@@ -113,7 +118,9 @@ namespace RandomBricksArcade
             GameScreenY = 16; //top of play area 
             velInc = 0.2f;
             highScore = new HighScore();
-            currentMenu = GameMenu.RandomLayout;
+            highScoreItem = highScore.HighScoreItem();
+            highScoreRandom = highScore.HighScoreRandom();
+            currentMenu = GameMenu.Main;
 
             CreateRandomItemLists();
 
@@ -347,138 +354,105 @@ namespace RandomBricksArcade
             }
         }
 
-        #endregion
+#endregion
 
-        #region Input
+#region Input
 
         public override bool HandleInput()
         {
-            bool result = false;
-
             if (State == GameState.Play)
             {
-
-
                 var right = InputManager.GetGamepadRightStick(tmPlayer.PlayerIndex);
                 if (right.Y != 0 || right.X != 0)
                 {
                     playerPaddlePos += right.X * paddleSpeed;
-                    result = true;
                 }
 
                 var left = InputManager.GetGamepadLeftStick(tmPlayer.PlayerIndex);
                 if (left.Y != 0 || left.X != 0)
                 {
                     playerPaddlePos += left.X * paddleSpeed;
-                    result = true;
                 }
 
                 var mouse = InputManager.GetMousePosDeltaSmoothed(tmPlayer.PlayerIndex);
                 if (mouse.X != 0)
                 {
- 
                     playerPaddlePos += mouse.X / mouseDampen;
-                    result = true;
                 }
 
                 if (InputManager.IsKeyPressed(tmPlayer.PlayerIndex, Keys.D))
                 {
                     playerPaddlePos += paddleSpeed;
-                    result = true;
                 }
                 if (InputManager.IsKeyPressed(tmPlayer.PlayerIndex, Keys.A))
                 {
                     playerPaddlePos -= paddleSpeed;
-                    result = true;
                 }
                 if (InputManager.IsKeyPressed(tmPlayer.PlayerIndex, Keys.W)
                     || InputManager.IsButtonPressed(tmPlayer.PlayerIndex, Buttons.A)
                     || InputManager.IsMouseButtonPressedNew(tmPlayer.PlayerIndex, MouseButtons.LeftButton))
                 {
                     stickyBall = false;
-                    result = true;
                 }
 
                 if (InputManager1.IsInputReleasedNew(tmPlayer.PlayerIndex, GuiInput.ExitScreen))
                 {
                     GameOver(false);
-                    result = true;
                 }
-
-                if (InputManager.IsMouseButtonPressed(TMPlayer.PlayerIndex, MouseButtons.LeftButton) ||
-                    InputManager.IsMouseButtonPressed(TMPlayer.PlayerIndex, MouseButtons.RightButton) ||
-                    InputManager.IsKeyPressed(TMPlayer.PlayerIndex, Keys.S) ||
-                    InputManager.IsButtonPressed(tmPlayer.PlayerIndex, Buttons.RightTrigger) ||
-                    InputManager.IsButtonPressed(tmPlayer.PlayerIndex, Buttons.LeftTrigger)
-                    )// ||
-                    //InputManager.GetGamepadLeftStick(tmPlayer.PlayerIndex).X != 0 ||
-                    //InputManager.GetGamepadLeftStick(tmPlayer.PlayerIndex).Y != 0 ||
-                    //InputManager.GetMousePosDeltaSmoothed(tmPlayer.PlayerIndex).X != 0 ||
-                    //InputManager.GetMousePosDeltaSmoothed(tmPlayer.PlayerIndex).Y != 0)
+#if DEBUG
+                if (InputManager.IsKeyReleasedNew(tmPlayer.PlayerIndex, Keys.N))
                 {
-                    //stop the player from punching the machine and doing weird stuff
+                    currentLevel += 1;
+                    stickyBall = true;
+                    ResetBall();
+                    GenerateLevel(currentLevel);
+                    ballVel = new Vector2(1, 1);
                     return true;
                 }
 
-                
+                if (InputManager.IsKeyPressed(tmPlayer.PlayerIndex, Keys.S))
+                {
+                    slowBall = true;
+                    return true;
+                }
+                else
+                    slowBall = false;
+#endif
+                return true;
             }
-
-            
-
 
             if (State == GameState.GameOver)
             {
-                if (InputManager.IsMouseButtonPressedNew(TMPlayer.PlayerIndex, MouseButtons.RightButton) || InputManager.IsButtonPressedNew(tmPlayer.PlayerIndex, Buttons.A))
-                {//switch between layout modes
-                    if (currentMenu == GameMenu.RandomLayout)
-                    {
-                        //switch to control menu
-                        useRandomLayout = true;
+                if (InputManager.IsButtonReleasedNew(TMPlayer.PlayerIndex, Buttons.A) || InputManager.IsKeyReleasedNew(TMPlayer.PlayerIndex, Keys.Enter))
+                {
+                    if (currentMenu == GameMenu.Main)
                         currentMenu = GameMenu.Controls;
-                        //game.AddNotification("Switch to controls menu " + useRandomLayout);
-                    }
-                    else if (currentMenu == GameMenu.Controls)
-                    {
-                        //switch to item Layout menu
-                        useRandomLayout = false;
-                        currentMenu = GameMenu.ItemLayout;
-                        // game.AddNotification("Switch to Item menu  " + useRandomLayout);
-                    }
-                    else if (currentMenu == GameMenu.ItemLayout)
-                    {
-                        //switch to Dedication menu
-                        useRandomLayout = false;
-                        currentMenu = GameMenu.Dedication;
-                        //  game.AddNotification("Switch to Dedication menu  " + useRandomLayout);
-                    }
-                    else if (currentMenu == GameMenu.Dedication)
-                    {
-                        //switch to Random Layout menu
-                        useRandomLayout = true;
-                        currentMenu = GameMenu.RandomLayout;
-                        //  game.AddNotification("Switch to Random menu  " + useRandomLayout);
-                    }
-
-
-                    result = true;
-
+                    else
+                        currentMenu = GameMenu.Main;
+                    return true;
                 }
+                if (InputManager1.IsInputReleasedNew(TMPlayer.PlayerIndex, GuiInput.MsgBoxY))
+                {
+                    useRandomLayout = !useRandomLayout;
+                    return true;
+                }
+
+                return InputManager.IsButtonPressed(TMPlayer.PlayerIndex, Buttons.A) || 
+                        InputManager.IsKeyPressed(TMPlayer.PlayerIndex, Keys.Enter) ||                    
+                        InputManager1.IsInputPressed(TMPlayer.PlayerIndex, GuiInput.MsgBoxY);
             }
 
-
-            return result ||
-                InputManager.IsButtonPressed(tmPlayer.PlayerIndex, Buttons.A) ||
-                InputManager.IsButtonPressed(tmPlayer.PlayerIndex, Buttons.X) ||
-                InputManager.IsButtonPressed(tmPlayer.PlayerIndex, Buttons.Y);
+            return false;
         }
 
-        #endregion
+#endregion
 
-        #region Update
+#region Update
 
         public override void Update()
         {
             if (!tmPlayer.IsInputEnabled) return;
+
 
             try
             {
@@ -518,16 +492,32 @@ namespace RandomBricksArcade
             }
             else
             {
-                ballPos += ballVel;
+                ballSpeedTimer += Services.ElapsedTime;
+                if (ballSpeedTimer > 25)
+                {
+                    //game.AddNotification("Ball speed increase", NotifyRecipient.Local);
+                    ballVel += new Vector2(velInc, velInc);
+                    ballSpeedTimer = 0;
+                }
+
+                if (!slowBall)
+                {
+                    ballPos += ballVel;
+                }
+                else
+                {
+                    ballPos += ballVel * 0.05f;
+                }
             }
 
+#if DEBUG
             if (autoPlay)
             {
                 var diff = ballPos.X - playerPaddlePos;
                 if (diff > 0) playerPaddlePos += Math.Min(diff, paddleSpeed);
                 else if (diff < 0) playerPaddlePos -= Math.Min(-diff, paddleSpeed);
             }
-
+#endif
             ClampPaddles();
 
 
@@ -541,13 +531,17 @@ namespace RandomBricksArcade
                     lives = 0;
                     LivesText = "Lives: " + lives;
                     GameOver(true);
-                    if (score > highScore.HighScoreRandom() && useRandomLayout)
+                    if (score > highScoreRandom && useRandomLayout)
                     {
-                        highScore.SaveHighScore(score, highScore.HighScoreItem());
+                        //only change the random score
+                        highScoreRandom = score;
+                        highScore.SaveHighScore(highScoreRandom, highScoreItem);
                     }
                     else if (score > highScore.HighScoreItem() && !useRandomLayout)
                     {
-                        highScore.SaveHighScore(highScore.HighScoreRandom(), score);
+                        //only change the item score
+                        highScoreItem = score;
+                        highScore.SaveHighScore(highScoreRandom, highScoreItem);
                     }
 
                     if (highScore.errorMsg != string.Empty)
@@ -570,79 +564,107 @@ namespace RandomBricksArcade
 
             else
             {
-                var f = float.MaxValue;
-                if (ballPos.Y > ScreenSize.Y - paddleIndent - paddleSize.Y && ballPos.X > playerPaddlePos - paddleSize2.X && ballPos.X < playerPaddlePos + paddleSize2.X)
-                {
-                    //ball hit paddle
-                    f = (ballPos.X - playerPaddlePos) * 0.1f;
-                }
-                else if (ballPos.X <= 0 + ballSize2 || ballPos.X >= ScreenSize.X - ballSize2)
-                {
-                    //Left or Right wall bounce 
+                //var f = float.MaxValue;
+                //if (ballPos.Y > ScreenSize.Y - paddleIndent - paddleSize.Y && ballPos.X > playerPaddlePos - paddleSize2.X && ballPos.X < playerPaddlePos + paddleSize2.X)
+                //{
+                //    //ball hit paddle
+                //    f = (ballPos.X - playerPaddlePos) * 0.1f;
+                //}
 
-                    ballVel.X = -ballVel.X;
-                }
-                if (ballPos.Y <= GameScreenY + ballSize2)
-                {
-                    //ball hit top of screen
-                    ballVel.Y = -ballVel.Y;
-                }
-
+                CheckPaddleCollision();
                 CheckBrickCollision();
 
-                if (f != float.MaxValue)
+                if (ballVel.X < 0)
                 {
-                    //ball hit something reverse direction 
-                    ballVel.Y = -ballVel.Y;
-                    ballVel.X += f;
+                    // Left Wall
+                    if (ballPos.X < ballSize2)
+                    {
+                        ballPos.X = ballSize2;
+                        ballVel.X = -ballVel.X;
+                    }
                 }
+                else if (ballVel.X > 0)
+                {
+                    // Right Wall
+                    if (ballPos.X > ScreenSize.X - ballSize2)
+                    {
+                        ballPos.X = ScreenSize.X - ballSize2;
+                        ballVel.X = -ballVel.X;
+                    }
+                }
+                if (ballVel.Y < 0 && ballPos.Y < GameScreenY + ballSize2)
+                {
+                    ballPos.Y = GameScreenY + ballSize2;
+                    ballVel.Y = -ballVel.Y;
+                }
+
+                //if (f != float.MaxValue)
+                //{
+                //    //ball hit something reverse direction 
+                //    ballVel.Y = -ballVel.Y;
+                //    ballVel.X += f;
+                //}
 
             }
         }
 
         private void ResetBall()
         {
-
-            //ballPos = new Vector2(ScreenSize.X / 2, ScreenSize.Y / 2);
             ballVel = new Vector2(1 + (currentLevel * velInc), 1 + (currentLevel * velInc));
             ballPos.X = playerPaddlePos;
-            ballPos.Y = ScreenSize.Y - ballSize2 - ballSize2 - paddleSize2.Y - paddleIndent; //think i need paddle indent here
+            ballPos.Y = ScreenSize.Y - ballSize2 - ballSize2 - paddleSize2.Y - paddleIndent -1;
+            
+        }
 
+        void CheckPaddleCollision()
+        {
+            var paddleRect = PlayerPaddleRect;
+            var collideRect = TestBallCollision(paddleRect);
+
+            if (collideRect.Width > collideRect.Height)
+            {
+                if (ballPos.X < paddleRect.X + paddleRect.Width * 0.1f)
+                {
+                    if (ballVel.X > 0) ballVel.X = -ballVel.X;
+                    ballVel.X *= 1.5f;
+                }
+                else if (ballPos.X < paddleRect.X + paddleRect.Width * 0.3f)
+                {
+                    if (ballVel.X > 0)
+                        ballVel.X *= 0.8f;
+                    else
+                        ballVel.X *= 1.25f;
+                }
+                else if (ballPos.X < paddleRect.X + paddleRect.Width * 0.7f)
+                {
+                }
+                else if (ballPos.X < paddleRect.X + paddleRect.Width * 0.9f)
+                {
+                    if (ballVel.X < 0)
+                        ballVel.X *= 0.8f;
+                    else
+                        ballVel.X *= 1.25f;
+                }
+                else
+                {
+                    if (ballVel.X < 0) ballVel.X = -ballVel.X;
+                    ballVel.X *= 1.5f;
+                }
+            }            
         }
 
         private void CheckBrickCollision()
         {
+            var ballRect = BallRect;
 
             for (int i = 0; i < Bricks.Count; i++)
             {
-                float x = Bricks[i].pos.X;
-                float y = Bricks[i].pos.Y;
-                //TODO take into account ball size
-                if (ballPos.X > Bricks[i].pos.X && ballPos.Y > Bricks[i].pos.Y && ballPos.Y < Bricks[i].pos.Y + Brick.height && ballPos.X < Bricks[i].pos.X + Brick.width)//(brick top left corner)
-                //if (BallRect.X > Bricks[i].pos.X && BallRect.Y > Bricks[i].pos.Y && BallRect.Y < Bricks[i].pos.Y + Brick.height && BallRect.X < Bricks[i].pos.X + Brick.width)//(brick top left corner)
+                var brick = Bricks[i];
 
+                if (TestBallCollision(brick.rectangle).Width > 0)
                 {
 
-                    if (ballPos.X - ballSize2 <= Bricks[i].pos.X && ballPos.X + ballSize2 >= Bricks[i].pos.X && ballPos.Y > Bricks[i].pos.Y && ballPos.Y < Bricks[i].pos.Y + Brick.height)
-                    {
-                        //ball hit on left side of brick 
-                        ballVel.X = -ballVel.X;
-                    }
-                    else if (ballPos.X - ballSize2 <= Bricks[i].pos.X + Brick.width && ballPos.X + ballSize2 >= Bricks[i].pos.X + Brick.width && ballPos.Y > Bricks[i].pos.Y && ballPos.Y < Bricks[i].pos.Y + Brick.height)
-                    {//hit right side 
-                        ballVel.X = -ballVel.X;
-                    }
-
-                    if (ballPos.Y - ballSize2 <= Bricks[i].pos.Y && ballPos.Y + ballSize2 >= Bricks[i].pos.Y && ballPos.X > Bricks[i].pos.X && ballPos.X < Bricks[i].pos.X + Brick.width)
-                    { //ball hit top 
-                        ballVel.Y = -ballVel.Y;
-                    }
-                    else if (ballPos.Y - ballSize2 <= Bricks[i].pos.Y + Brick.height && ballPos.Y + ballSize2 >= Bricks[i].pos.Y + Brick.height && ballPos.X > Bricks[i].pos.X && ballPos.X < Bricks[i].pos.X + Brick.width)
-                    { //ball hit bottom 
-                        ballVel.Y = -ballVel.Y;
-                    }
-
-
+                    PlayCollideSound(Bricks[i].health);
                     if (Bricks[i].breakable)
                     {
                         score++;
@@ -654,6 +676,7 @@ namespace RandomBricksArcade
 
                     if (Bricks[i].health <= 0)
                     {
+                        //TODO remove after were done with list?
                         Bricks.RemoveAt(i);
                     }
 
@@ -673,12 +696,58 @@ namespace RandomBricksArcade
                         stickyBall = true;
                         ResetBall();
                         GenerateLevel(currentLevel);
+                        break;
                     }
-
-                    break;
-
                 }
             }
+
+        }
+
+        Rectangle TestBallCollision(Rectangle targetRect)
+        {
+            Rectangle collideRect = Rectangle.Intersect(BallRect, targetRect);
+            if (collideRect.Width > 0)
+            {
+                
+                if (collideRect.Width >= collideRect.Height)
+                {
+                    if (collideRect.Y == targetRect.Y)
+                    {
+                        if (ballVel.Y > 0)
+                            ballVel.Y = -ballVel.Y;
+                    }
+                    else if (collideRect.Y + collideRect.Height == targetRect.Y + targetRect.Height)
+                    {
+                        if (ballVel.Y < 0)
+                            ballVel.Y = -ballVel.Y;
+                    }
+                }
+                if (collideRect.Width <= collideRect.Height)
+                {
+                    if (collideRect.X == targetRect.X)
+                    {
+                        if (ballVel.X > 0)
+                            ballVel.X = -ballVel.X;
+                    }
+                    else if (collideRect.X + collideRect.Width == targetRect.X + targetRect.Width)
+                    {
+                        if (ballVel.X < 0)
+                            ballVel.X = -ballVel.X;
+                    }
+                }
+            }
+            return collideRect;
+        }
+
+        private void PlayCollideSound(int hp)
+        {
+            //TODO add sound for each health 1,2,3,10
+            switch (hp)
+            {
+                
+                default: Sounds.PlaySound(Item.DiamondPickaxe, ItemSoundType.Hit);break;
+            }
+
 
         }
 
@@ -708,7 +777,8 @@ namespace RandomBricksArcade
 
             return rtn;
         }
-
+         
+    
         private void CalculateNextLifeScore()
         {
             //1st = 10, 2nd = 30, 3rd = 60, 4th = 100.....
@@ -791,7 +861,7 @@ namespace RandomBricksArcade
             MidLevelItemList = new List<Item>();
             HighLevelItemList = new List<Item>();
 
-            #region LowLevel
+#region LowLevel
             LowLevelItemList.Add(Item.Bullet);
             //LowLevelItemList.Add(Item.Splinter1);
             LowLevelItemList.Add(Item.SteelSword);
@@ -856,10 +926,10 @@ namespace RandomBricksArcade
             LowLevelItemList.Add(Item.DiamondHoe);
             LowLevelItemList.Add(Item.BronzeHoe);
 
-            #endregion
+#endregion
 
 
-            #region MidLevel
+#region MidLevel
             MidLevelItemList.Add(Item.GoldKey);
             MidLevelItemList.Add(Item.SteelClaymore);
             MidLevelItemList.Add(Item.Strawberries);
@@ -997,9 +1067,9 @@ namespace RandomBricksArcade
 
 
 
-            #endregion
+#endregion
 
-            #region HighLevel
+#region HighLevel
             HighLevelItemList.Add(Item.GreenstoneGoldHatchet);
             HighLevelItemList.Add(Item.RawBeef);
             HighLevelItemList.Add(Item.TitanKey);
@@ -1142,7 +1212,7 @@ namespace RandomBricksArcade
             HighLevelItemList.Add(Item.NaturalWorld);
             HighLevelItemList.Add(Item.GrenadeTex);
 
-            #endregion
+#endregion
         }
 
         Color SetColorBasedOnHealth(int health)
@@ -1162,7 +1232,7 @@ namespace RandomBricksArcade
                     color = Color.Green;
                     break;
                 case 10:
-                    color = Color.Gray;
+                    color = Color.Silver;
                     break;
                 default:
                     color = Color.White;
@@ -1174,10 +1244,10 @@ namespace RandomBricksArcade
         }
 
 
-        #endregion
+#endregion
 
 
-        #region experminatal
+#region experminatal
 
 
 
@@ -1256,6 +1326,6 @@ namespace RandomBricksArcade
         //    return new Color(color.A, (int)red, (int)green, (int)blue);
         //}
 
-        #endregion
+#endregion
     }
 }

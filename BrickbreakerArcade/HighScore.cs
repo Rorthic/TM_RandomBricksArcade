@@ -45,32 +45,35 @@ namespace RandomBricksArcade
         void LoadHighScore()
         {
             String scores = "0";
-            try
-            {   // Open the text file using a stream reader.
-                using (StreamReader sr = new StreamReader(fileName))
-                {
-                    // Read the stream to a string
-                    scores = sr.ReadToEnd();
-
-                    //need to parse the read lines into scoreI and scoreR as int32
-                    string[] commands = scores.Split(',');
-
-                    if (!Int32.TryParse(commands[0], out highScoreRandom) || !Int32.TryParse(commands[1], out highScoreItem))
+            if (System.IO.File.Exists(fileName))
+            {
+                try
+                {   // Open the text file using a stream reader.
+                    using (StreamReader sr = new StreamReader(fileName))
                     {
-                        errorMsg += "Random Brick: Error parsing high score";
-                        
-                    }
+                        // Read the stream to a string
+                        scores = sr.ReadToEnd();
 
+                        //need to parse the read lines into scoreI and scoreR as int32
+                        string[] commands = scores.Split(',');
+
+                        if (!Int32.TryParse(commands[0], out highScoreRandom) || !Int32.TryParse(commands[1], out highScoreItem))
+                        {
+                            errorMsg += "Random Brick: Error parsing high score";
+
+                        }
+
+                    }
+                }
+                catch (Exception e)
+                {
+                    errorMsg += "Random Brick: The file could not be read: " + e.Message;
                 }
             }
-            catch (Exception e)
+            else
             {
-
-                errorMsg += "Random Brick: The file could not be read: " + e.Message;
-
-
+                SaveHighScore(0, 0);//create file as it doesnt exist
             }
-
            // return Int32.Parse(score);
         }
 
