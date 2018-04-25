@@ -1,11 +1,6 @@
 ﻿using StudioForge.Engine.Core;
 using System;
 using System.IO;
-using StudioForge.TotalMiner;
-using Microsoft.Xna.Framework.Graphics;
-using StudioForge.Engine;
-using Microsoft.Xna.Framework;
-using System.Linq;
 
 namespace RandomBricksArcade
 {
@@ -18,14 +13,14 @@ namespace RandomBricksArcade
         public string errorMsg = string.Empty;
 
 
-        public int HighScoreRandom()
+        public int HighScoreForRandomLayout()
         {
             //load score from file then return it
             LoadHighScore();
             return highScoreRandom;
         }
 
-        public int HighScoreItem()
+        public int HighScoreForItemLayout()
         {
             //load score from file then return it
             LoadHighScore();

@@ -1,4 +1,3 @@
-using StudioForge.Engine.Integration;
 using StudioForge.TotalMiner;
 using StudioForge.TotalMiner.API;
 
@@ -40,7 +39,7 @@ namespace RandomBricksArcade
         public void InitializeGame(ITMGame game)
         {
             this.game = game;
-            game.AddNotification("Arcade Games: Activated", NotifyRecipient.Local);
+            //game.AddNotification("Arcade Games: Activated", NotifyRecipient.Local);
         }
 
         public bool HandleInput(ITMPlayer player)

@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace RandomBricksArcade
 {
-    public static class RandomizeList
+    public static class List
     {
 
         private static Random rng = new Random();
